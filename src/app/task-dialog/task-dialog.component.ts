@@ -22,6 +22,7 @@ export class TaskDialogComponent implements OnInit {
     this.dialogRef.close(this.data);
   }
 
+
   ngOnInit(): void {
   }
 
