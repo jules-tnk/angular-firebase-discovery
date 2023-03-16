@@ -96,6 +96,16 @@
             ],
             "scripts": []
           }
+        },
+        "deploy": {
+          "builder": "@angular/fire:deploy",
+          "options": {
+            "prerender": false,
+            "ssr": false,
+            "browserTarget": "angular-firebase-discovery:build:production",
+            "firebaseProject": "fir-discovery-88a9b",
+            "firebaseHostingSite": "fir-discovery-88a9b"
+          }
         }
       }
     }

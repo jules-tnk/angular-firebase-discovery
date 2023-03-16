@@ -1,0 +1,14 @@
+{
+  "targets": {
+    "fir-discovery-88a9b": {
+      "hosting": {
+        "angular-firebase-discovery": [
+          "fir-discovery-88a9b"
+        ]
+      }
+    }
+  },
+  "projects": {
+    "default": "fir-discovery-88a9b"
+  }
+}

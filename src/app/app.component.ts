@@ -4,6 +4,18 @@ import {TaskDialogResult} from "./models/dialog";
 import {CdkDragDrop, transferArrayItem} from "@angular/cdk/drag-drop";
 import {TaskDialogComponent} from "./task-dialog/task-dialog.component";
 import {MatDialog} from "@angular/material/dialog";
+import {AngularFirestore, AngularFirestoreCollection} from "@angular/fire/compat/firestore";
+import {BehaviorSubject, Observable} from "rxjs";
+
+
+const getObservable = (collection: AngularFirestoreCollection<Task>) => {
+  const subject = new BehaviorSubject<Task[]>([]);
+  collection.valueChanges({ idField: 'id' }).subscribe((val: Task[]) => {
+    subject.next(val);
+  });
+  return subject;
+};
+
 
 @Component({
   selector: 'app-root',
@@ -13,27 +25,29 @@ import {MatDialog} from "@angular/material/dialog";
 export class AppComponent {
   title = 'angular-firebase-discovery';
 
-  todo: Task[] = [
-    {title: 'Task 1', description: 'Description 1'},
-    {title: 'Task 2', description: 'Description 2'},
-    {title: 'Task 3', description: 'Description 3'},
-  ];
 
-  inProgress: Task[] = [];
+  todo = getObservable(this.fbStore.collection('todo')) as Observable<Task[]>;
+  inProgress = getObservable(this.fbStore.collection('inProgress')) as Observable<Task[]>;
+  done = getObservable(this.fbStore.collection('done')) as Observable<Task[]>;
 
-  done: Task[] = [];
 
-  constructor(private dialog: MatDialog) {
+  constructor(private dialog: MatDialog,
+              private fbStore: AngularFirestore) {
   }
 
-  drop(event: CdkDragDrop<Task[]>): void {
+  drop(event: any/*event: CdkDragDrop<Task[]>*/): void {
     if (event.previousContainer === event.container) {
       return;
     }
+    const item = event.previousContainer.data[event.previousIndex];
 
-    if (!event.container.data || !event.previousContainer.data) {
-      return;
-    }
+    this.fbStore.firestore.runTransaction(() => {
+      const promise = Promise.all([
+        this.fbStore.collection(event.previousContainer.id).doc(item.id).delete(),
+        this.fbStore.collection(event.container.id).doc(item.id).set(item)
+      ]);
+      return promise;
+    })
 
     transferArrayItem(
       event.previousContainer.data,
@@ -58,7 +72,7 @@ export class AppComponent {
         if (!result) {
           return;
         }
-        this.todo.push(result.task);
+        this.fbStore.collection('todo').add(result.task)
       });
   }
 
@@ -77,12 +91,10 @@ export class AppComponent {
         if (!result) {
           return;
         }
-        const dataList = this[list];
-        const taskIndex = dataList.indexOf(task);
         if (result.delete) {
-          dataList.splice(taskIndex, 1);
+          this.fbStore.collection(list).doc(task.id).delete();
         } else {
-          dataList[taskIndex] = task;
+          this.fbStore.collection(list).doc(task.id).update(task);
         }
       }
     )
